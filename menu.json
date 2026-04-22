@@ -1,0 +1,51 @@
+{
+  "🥗 Salatlar": {
+    "Grato": 35000,
+    "Seul": 35000,
+    "Svejiy salat": 20000,
+    "Qarsildoq baqlajon": 45000,
+    "Vinegrat": 20000,
+    "Bahor salati": 30000,
+    "Bavarskiy salat": 30000,
+    "Baqlajonli rulet": 40000,
+    "Fransuz salati": 30000,
+    "Adana": 40000,
+    "Mujskoy kapriz": 40000
+  },
+  "🍜 Suyuq taomlar": {
+    "Teftel shorva": 25000,
+    "Balaza shorva": 25000,
+    "Chuchvara sho'rva": 25000,
+    "Solyanka": 30000,
+    "Uyg'ur lag'mon": 35000,
+    "Tushonka sho'rva": 40000
+  },
+  "🍛 Quyuq taomlar": {
+    "Qovurma lag'mon": 30000,
+    "Teriyaki go'shtli": 45000,
+    "Teriyaki tovuqli": 40000,
+    "Ismaloqli chuchvara": 20000,
+    "Go'shtli chuchvara": 25000,
+    "Manti": 6000,
+    "Tovuq va pishloqli kabachki": 15000,
+    "Tovuqli qo'ziqorinli rulet (250gr)": 25000,
+    "Tovuqli kotlet": 10000,
+    "Pomidorli pishloqli go'shtli kotlet": 15000,
+    "Go'shtli kotlet": 10000,
+    "KFS fele (500gr)": 40000,
+    "Assorti": 30000,
+    "Turkcha sarma beyti": 50000,
+    "Go'shtli say": 45000,
+    "Podjarka": 40000,
+    "Tovuqli sabzavotli jiz (500gr)": 40000
+  },
+  "☕️ Ichimliklar": {
+    "Sok Dena": 13000,
+    "Fanta (0.5)": 7000,
+    "Fanta (1.0)": 11000,
+    "Fanta (1.5)": 15000,
+    "Kola (0.5)": 7000,
+    "Kola (1.0)": 11000,
+    "Kola (1.5)": 15000
+  }
+}
