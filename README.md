@@ -33,6 +33,10 @@ uvicorn api.app:app --host 0.0.0.0 --port 8000 --reload
 python bot.py
 ```
 
+## Muhim eslatma
+Agar `DATABASE_URL` vaqtincha sozlanmagan bo'lsa, API startup'da yiqilmaydi va `GET /health` da `db_ready: false` qaytaradi.
+Bu degradatsiya rejimi: DB talab qiladigan endpointlar ishlamasligi mumkin, shuning uchun productionda baribir `DATABASE_URL` ni sozlang.
+
 ## Deploy bo'yicha tavsiya
 Bot va API ni alohida process/service qilib deploy qiling:
 

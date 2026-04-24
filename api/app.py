@@ -1,4 +1,5 @@
 import json
+import logging
 import os
 import uuid
 import hashlib
@@ -37,11 +38,19 @@ AUTH_SECRET = os.getenv("AUTH_SECRET", "dev-auth-secret")
 
 bot = telebot.TeleBot(TOKEN) if TOKEN else None
 active_tokens: dict[str, dict] = {}
+logger = logging.getLogger(__name__)
+DB_READY = False
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    init_db(str(ADMIN_ID))
+    global DB_READY
+    try:
+        init_db(str(ADMIN_ID))
+        DB_READY = True
+    except Exception as e:
+        DB_READY = False
+        logger.exception("Database init failed, API will run in degraded mode: %s", e)
     yield
 
 
@@ -202,7 +211,7 @@ def get_current_admin(authorization: str = Header(default="")):
 
 @app.get("/health")
 def health():
-    return {"ok": True}
+    return {"ok": True, "db_ready": DB_READY}
 
 
 @app.get("/admin.html")
