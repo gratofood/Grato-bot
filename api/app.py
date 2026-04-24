@@ -31,9 +31,13 @@ MENU_PATH = BASE_DIR / "menu.json"
 WEBAPP_DIR = BASE_DIR / "webapp"
 IMAGES_DIR = WEBAPP_DIR / "images"
 
-TOKEN = os.getenv("BOT_TOKEN", "8500279228:AAEJSwSkU72fOM53ntPHMoVoSMudIQv-7ZE")
-ADMIN_ID = int(os.getenv("ADMIN_ID", "7825940174"))
-AUTH_SECRET = os.getenv("AUTH_SECRET", "grato-secret-2026")
+TOKEN = os.getenv("BOT_TOKEN")
+if not TOKEN:
+    raise RuntimeError("BOT_TOKEN environment variable is required")
+ADMIN_ID = int(os.getenv("ADMIN_ID", "0"))
+AUTH_SECRET = os.getenv("AUTH_SECRET")
+if not AUTH_SECRET:
+    raise RuntimeError("AUTH_SECRET environment variable is required")
 
 bot = telebot.TeleBot(TOKEN)
 active_tokens: dict[str, dict] = {}

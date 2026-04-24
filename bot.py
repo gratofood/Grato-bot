@@ -18,12 +18,14 @@ from api.database import set_admin_password
 BASE_DIR = Path(__file__).resolve().parent
 MENU_PATH = BASE_DIR / "menu.json"
 
-BOT_TOKEN = os.getenv("BOT_TOKEN") or os.getenv("TOKEN") or "8500279228:AAEJSwSkU72fOM53ntPHMoVoSMudIQv-7ZE"
+BOT_TOKEN = os.getenv("BOT_TOKEN") or os.getenv("TOKEN")
+if not BOT_TOKEN:
+    raise RuntimeError("BOT_TOKEN (or TOKEN) environment variable is required")
 # Backward compatibility for old code paths that still reference TOKEN.
 TOKEN = BOT_TOKEN
-ADMIN_ID = int(os.getenv("ADMIN_ID", "7825940174"))
+ADMIN_ID = int(os.getenv("ADMIN_ID", "0"))
 WEB_APP_URL = os.getenv("WEB_APP_URL", "")
-API_BASE = os.getenv("API_BASE", "https://grato-api-production.up.railway.app")
+API_BASE = os.getenv("API_BASE", "")
 API_URL = os.getenv("API_URL", API_BASE)
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s | %(levelname)s | %(message)s")
@@ -154,6 +156,8 @@ def process_web_app_order(msg):
 
 
 def save_order_to_db(phone, address, items, total):
+    if not API_URL:
+        raise RuntimeError("API_URL (or API_BASE) environment variable is required")
     try:
         res = requests.post(
             f"{API_URL}/api/orders",
