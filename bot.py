@@ -517,6 +517,7 @@ def prepare_polling():
 # ===== RUN =====
 if __name__ == "__main__":
     logging.info("Bot ishga tushdi...")
+    prepare_polling()
     while True:
         try:
             init_db()
