@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Menu</title>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <style>
+    body { font-family: sans-serif; text-align: center; }
+    button {
+      display: block;
+      width: 80%;
+      margin: 10px auto;
+      padding: 15px;
+      font-size: 18px;
+      border-radius: 10px;
+      border: none;
+      background: #2ecc71;
+      color: white;
+    }
+  </style>
+</head>
+<body>
+
+<h2>🍽 Menu</h2>
+
+<button onclick="order('Burger')">🍔 Burger - 25000</button>
+<button onclick="order('Cola')">🥤 Cola - 10000</button>
+<button onclick="order('Pizza')">🍕 Pizza - 40000</button>
+
+<script>
+  const tg = window.Telegram.WebApp;
+  tg.expand();
+
+  function order(item) {
+    tg.sendData(item);
+  }
+</script>
+
+</body>
+</html>
