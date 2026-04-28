@@ -1,23 +1,23 @@
 import telebot
 from telebot import types
-
 import os
-TOKEN = os.getenv("TOKEN")
-ADMIN_ID = int(os.getenv("ADMIN_ID"))
+import json
+
+TOKEN = os.getenv("8500279228:AAEJSwSkU72fOM53ntPHMoVoSMudIQv-7ZE")
+ADMIN_ID = int(os.getenv("6877877555"))
 
 bot = telebot.TeleBot(TOKEN)
 
-# ===== MENU =====
-menu = {
-    "🍔 Burgerlar": {
-        "Cheeseburger": 25000,
-        "Big Burger": 30000
-    },
-    "🥤 Ichimliklar": {
-        "Cola": 10000,
-        "Fanta": 10000
-    }
-}
+# ===== MENU JSONDAN OLISH =====
+def load_menu():
+    try:
+        with open("menu.json", "r", encoding="utf-8") as f:
+            return json.load(f)
+    except Exception as e:
+        print("MENU ERROR:", e)
+        return {}
+
+menu = load_menu()
 
 user_carts = {}
 
@@ -31,7 +31,7 @@ def main_menu():
 
 def food_menu(category):
     markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
-    for food, price in menu[category].items():
+    for food, price in menu.get(category, {}).items():
         markup.add(f"{food} - {price} so'm")
     markup.add("🔙 Orqaga")
     return markup
@@ -73,7 +73,6 @@ def handler(msg):
 
         text_order += f"\n📞 {phone}\n💰 Jami: {total} so'm"
 
-        # adminga yuborish
         bot.send_message(ADMIN_ID, text_order)
 
         user_carts[chat_id] = []
