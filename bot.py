@@ -1,8 +1,9 @@
 import telebot
 from telebot import types
 
-TOKEN = "TOKENINGNI_QO'Y"
-ADMIN_ID = 123456789  # o'zingni telegram ID
+import os
+TOKEN = os.getenv("TOKEN")
+ADMIN_ID = int(os.getenv("ADMIN_ID"))
 
 bot = telebot.TeleBot(TOKEN)
 
