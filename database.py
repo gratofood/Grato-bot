@@ -1,305 +1,156 @@
-import hashlib
+import telebot
+from telebot import types
 import json
 import os
-import urllib.parse
 
-import pg8000
+TOKEN = "8500279228:AAEJSwSkU72fOM53ntPHMoVoSMudIQv-7ZE"
+ADMIN_ID = 6877877555  # o'zingni telegram ID
 
-DATABASE_URL = os.getenv("DATABASE_URL")
+bot = telebot.TeleBot(TOKEN)
 
+MENU_FILE = "menu.json"
 
-def get_conn():
-    if not DATABASE_URL:
-        raise RuntimeError("DATABASE_URL environment variable is not set")
-    url = urllib.parse.urlparse(DATABASE_URL)
-    return pg8000.connect(
-        host=url.hostname,
-        port=url.port or 5432,
-        database=url.path[1:],
-        user=url.username,
-        password=url.password,
-        ssl_context=True,
-    )
+user_carts = {}
 
+# ===== MENU LOAD (XATOGA CHIDAMLI) =====
+def load_menu():
+    if not os.path.exists(MENU_FILE):
+        print("❌ menu.json topilmadi")
+        return {}
 
-def _rows_to_dicts(cursor, rows):
-    columns = [col[0] for col in (cursor.description or [])]
-    return [dict(zip(columns, row)) for row in rows]
-
-
-def _row_to_dict(cursor, row):
-    if not row:
-        return None
-    columns = [col[0] for col in (cursor.description or [])]
-    return dict(zip(columns, row))
-
-
-def init_db(superadmin_telegram_id: str | None = None):
-    conn = get_conn()
     try:
-        cur = conn.cursor()
-        cur.execute(
-            """
-            CREATE TABLE IF NOT EXISTS users (
-                user_id TEXT PRIMARY KEY,
-                username TEXT,
-                first_name TEXT,
-                first_seen TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                last_seen TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            )
-            """
-        )
-        cur.execute(
-            """
-            CREATE TABLE IF NOT EXISTS admins (
-                id SERIAL PRIMARY KEY,
-                telegram_id TEXT UNIQUE,
-                username TEXT,
-                role TEXT,
-                password_hash TEXT,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            )
-            """
-        )
-        cur.execute(
-            """
-            CREATE TABLE IF NOT EXISTS orders (
-                id SERIAL PRIMARY KEY,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                phone TEXT,
-                address TEXT,
-                items_json TEXT,
-                total INTEGER,
-                status TEXT DEFAULT 'new'
-            )
-            """
-        )
-        cur.execute("ALTER TABLE admins ADD COLUMN IF NOT EXISTS password_hash TEXT")
+        with open(MENU_FILE, "r", encoding="utf-8") as f:
+            data = json.load(f)
+            if not isinstance(data, dict):
+                print("❌ menu.json noto‘g‘ri format")
+                return {}
+            return data
+    except Exception as e:
+        print("❌ JSON xato:", e)
+        return {}
 
-        if superadmin_telegram_id:
-            cur.execute(
-                """
-                INSERT INTO admins (telegram_id, username, role)
-                VALUES (%s, %s, 'superadmin')
-                ON CONFLICT (telegram_id) DO NOTHING
-                """,
-                (str(superadmin_telegram_id), "superadmin"),
-            )
-        conn.commit()
-    finally:
-        conn.close()
+# ===== MENULAR =====
+def main_menu():
+    menu = load_menu()
+
+    markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
+    for cat in menu:
+        markup.add(cat)
+
+    markup.add("🛒 Savat", "✅ Buyurtma berish")
+    return markup
 
 
-def upsert_user(user_id: str, username: str = "", first_name: str = ""):
-    conn = get_conn()
-    try:
-        cur = conn.cursor()
-        cur.execute(
-            """
-            INSERT INTO users (user_id, username, first_name)
-            VALUES (%s, %s, %s)
-            ON CONFLICT (user_id) DO UPDATE SET
-                username = EXCLUDED.username,
-                first_name = EXCLUDED.first_name,
-                last_seen = CURRENT_TIMESTAMP
-            """,
-            (str(user_id), username or "", first_name or ""),
-        )
-        conn.commit()
-    finally:
-        conn.close()
+def food_menu(category):
+    menu = load_menu()
+
+    markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
+
+    if category not in menu:
+        return main_menu()
+
+    for food, price in menu[category].items():
+        markup.add(f"{food} - {price} so'm")
+
+    markup.add("🔙 Orqaga")
+    return markup
 
 
-def list_user_ids():
-    conn = get_conn()
-    try:
-        cur = conn.cursor()
-        cur.execute("SELECT user_id FROM users")
-        rows = cur.fetchall()
-        columns = [col[0] for col in (cur.description or [])]
-        idx = columns.index("user_id") if "user_id" in columns else 0
-        return [r[idx] for r in rows]
-    finally:
-        conn.close()
+# ===== START =====
+@bot.message_handler(commands=["start"])
+def start(msg):
+    user_carts[msg.chat.id] = []
+    bot.send_message(msg.chat.id, "Bo'lim tanlang:", reply_markup=main_menu())
 
 
-def users_count():
-    conn = get_conn()
-    try:
-        cur = conn.cursor()
-        cur.execute("SELECT COUNT(*) FROM users")
-        count = cur.fetchone()[0]
-        return int(count or 0)
-    finally:
-        conn.close()
+# ===== HANDLER =====
+@bot.message_handler(content_types=["text", "contact"])
+def handler(msg):
+    menu = load_menu()
+
+    chat_id = msg.chat.id
+    text = msg.text if msg.text else ""
+
+    # ===== TELEFON → ZAKAZ =====
+    if msg.content_type == "contact":
+        phone = msg.contact.phone_number
+        cart = user_carts.get(chat_id, [])
+
+        if not cart:
+            bot.send_message(chat_id, "Savat bo'sh")
+            return
+
+        total = 0
+        text_order = "🛒 Yangi zakaz:\n\n"
+
+        for item in set(cart):
+            count = cart.count(item)
+            price = 0
+
+            for cat in menu:
+                if item in menu[cat]:
+                    price = menu[cat][item]
+
+            total += price * count
+            text_order += f"{item} x{count} = {price * count} so'm\n"
+
+        text_order += f"\n📞 {phone}\n💰 Jami: {total} so'm"
+
+        # ADMINGA
+        bot.send_message(ADMIN_ID, text_order)
+
+        user_carts[chat_id] = []
+        bot.send_message(chat_id, "✅ Zakazingiz qabul qilindi!", reply_markup=main_menu())
+        return
+
+    # ===== ORQAGA =====
+    if text == "🔙 Orqaga":
+        bot.send_message(chat_id, "Menu:", reply_markup=main_menu())
+        return
+
+    # ===== SAVAT =====
+    if text == "🛒 Savat":
+        cart = user_carts.get(chat_id, [])
+
+        if not cart:
+            bot.send_message(chat_id, "Savat bo'sh")
+            return
+
+        text_cart = "🛒 Savat:\n\n"
+        for item in set(cart):
+            text_cart += f"{item} x{cart.count(item)}\n"
+
+        bot.send_message(chat_id, text_cart)
+        return
+
+    # ===== BUYURTMA =====
+    if text == "✅ Buyurtma berish":
+        cart = user_carts.get(chat_id, [])
+
+        if not cart:
+            bot.send_message(chat_id, "Savat bo'sh")
+            return
+
+        markup = types.ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True)
+        markup.add(types.KeyboardButton("📞 Raqam yuborish", request_contact=True))
+
+        bot.send_message(chat_id, "Telefon raqamingizni yuboring:", reply_markup=markup)
+        return
+
+    # ===== KATEGORIYA =====
+    if text in menu:
+        bot.send_message(chat_id, text, reply_markup=food_menu(text))
+        return
+
+    # ===== MAHSULOT =====
+    for cat in menu:
+        for food in menu[cat]:
+            if text.startswith(food):
+                user_carts.setdefault(chat_id, []).append(food)
+                bot.send_message(chat_id, f"{food} qo'shildi ✅")
+                return
 
 
-def list_admins():
-    conn = get_conn()
-    try:
-        cur = conn.cursor()
-        cur.execute("SELECT id, telegram_id, username, role, created_at FROM admins ORDER BY id ASC")
-        rows = cur.fetchall()
-        return _rows_to_dicts(cur, rows)
-    finally:
-        conn.close()
-
-
-def get_admin_by_telegram_id(telegram_id: str):
-    conn = get_conn()
-    try:
-        cur = conn.cursor()
-        cur.execute(
-            "SELECT id, telegram_id, username, role, password_hash, created_at FROM admins WHERE telegram_id = %s",
-            (str(telegram_id),),
-        )
-        row = cur.fetchone()
-        return _row_to_dict(cur, row)
-    finally:
-        conn.close()
-
-
-def add_admin(telegram_id: str, username: str, role: str = "admin"):
-    conn = get_conn()
-    try:
-        cur = conn.cursor()
-        cur.execute(
-            "INSERT INTO admins (telegram_id, username, role) VALUES (%s, %s, %s)",
-            (str(telegram_id), username, role),
-        )
-        conn.commit()
-    finally:
-        conn.close()
-
-
-def set_admin_password(telegram_id: str, password: str):
-    password_hash = hashlib.sha256(password.encode()).hexdigest()
-    conn = get_conn()
-    try:
-        cur = conn.cursor()
-        cur.execute(
-            "UPDATE admins SET password_hash = %s WHERE telegram_id = %s",
-            (password_hash, str(telegram_id)),
-        )
-        updated = cur.rowcount
-        conn.commit()
-        return updated > 0
-    finally:
-        conn.close()
-
-
-def verify_admin(telegram_id: str, password: str):
-    password_hash = hashlib.sha256(password.encode()).hexdigest()
-    conn = get_conn()
-    try:
-        cur = conn.cursor()
-        cur.execute(
-            """
-            SELECT id, telegram_id, username, role, created_at
-            FROM admins
-            WHERE telegram_id = %s AND password_hash = %s
-            """,
-            (str(telegram_id), password_hash),
-        )
-        row = cur.fetchone()
-        return _row_to_dict(cur, row)
-    finally:
-        conn.close()
-
-
-def delete_admin(telegram_id: str):
-    conn = get_conn()
-    try:
-        cur = conn.cursor()
-        cur.execute("SELECT role FROM admins WHERE telegram_id = %s", (str(telegram_id),))
-        role = cur.fetchone()
-        if role and role[0] == "superadmin":
-            return False
-        cur.execute("DELETE FROM admins WHERE telegram_id = %s", (str(telegram_id),))
-        conn.commit()
-        return True
-    finally:
-        conn.close()
-
-
-def save_order(phone: str, address: str, items: list, total: int, status: str = "new"):
-    conn = get_conn()
-    try:
-        cur = conn.cursor()
-        cur.execute(
-            """
-            INSERT INTO orders (phone, address, items_json, total, status)
-            VALUES (%s, %s, %s, %s, %s)
-            RETURNING id
-            """,
-            (phone, address, json.dumps(items, ensure_ascii=False), int(total), status),
-        )
-        oid = cur.fetchone()[0]
-        conn.commit()
-        return oid
-    finally:
-        conn.close()
-
-
-def list_orders():
-    conn = get_conn()
-    try:
-        cur = conn.cursor()
-        cur.execute("SELECT * FROM orders ORDER BY id DESC")
-        rows = cur.fetchall()
-        raw = _rows_to_dicts(cur, rows)
-        out = []
-        for d in raw:
-            d["items"] = json.loads(d.pop("items_json") or "[]")
-            out.append(d)
-        return out
-    finally:
-        conn.close()
-
-
-def update_order_status(order_id: int, status: str):
-    conn = get_conn()
-    try:
-        cur = conn.cursor()
-        cur.execute("UPDATE orders SET status = %s WHERE id = %s", (status, order_id))
-        conn.commit()
-    finally:
-        conn.close()
-
-
-def get_stats():
-    conn = get_conn()
-    try:
-        cur = conn.cursor()
-        cur.execute("SELECT COUNT(*) FROM orders")
-        total_orders = cur.fetchone()[0]
-
-        cur.execute("SELECT COALESCE(SUM(total), 0) FROM orders")
-        total_revenue = cur.fetchone()[0]
-
-        cur.execute("SELECT COUNT(*) FROM orders WHERE DATE(created_at) = CURRENT_DATE")
-        today_orders = cur.fetchone()[0]
-
-        cur.execute("SELECT COALESCE(SUM(total), 0) FROM orders WHERE DATE(created_at) = CURRENT_DATE")
-        today_revenue = cur.fetchone()[0]
-
-        cur.execute("SELECT items_json FROM orders")
-        rows = cur.fetchall()
-
-        item_counts = {}
-        for row in rows:
-            for item in json.loads((row[0] or "[]")):
-                name = item.get("name", "Noma'lum")
-                qty = int(item.get("qty", 1))
-                item_counts[name] = item_counts.get(name, 0) + qty
-
-        top = sorted(item_counts.items(), key=lambda x: x[1], reverse=True)[:5]
-        return {
-            "total_orders": int(total_orders or 0),
-            "total_revenue": int(total_revenue or 0),
-            "today_orders": int(today_orders or 0),
-            "today_revenue": int(today_revenue or 0),
-            "top_items": [{"name": n, "count": c} for n, c in top],
-        }
-    finally:
-        conn.close()
+# ===== RUN =====
+print("🚀 Bot ishga tushdi...")
+bot.infinity_polling()
