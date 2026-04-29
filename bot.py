@@ -8,21 +8,16 @@ ADMIN_ID = 6877877555
 
 bot = telebot.TeleBot(TOKEN)
 
-
 @bot.message_handler(commands=["start"])
 def start(msg):
     markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
 
-    web_app = types.WebAppInfo("https://gratofood.github.io/miniapp/")
+    web_app = types.WebAppInfo("https://gratofood.github.io/miniapp/?v=3")
 
     btn = types.KeyboardButton("🛍 Buyurtma berish", web_app=web_app)
     markup.add(btn)
 
-    bot.send_message(
-        msg.chat.id,
-        "Buyurtma berish uchun tugmani bosing 👇",
-        reply_markup=markup
-    )
+    bot.send_message(msg.chat.id, "Buyurtma berish 👇", reply_markup=markup)
 
 
 @bot.message_handler(content_types=["web_app_data"])
@@ -39,17 +34,15 @@ def webapp(msg):
         bot.send_message(chat_id, "Savat bo'sh ❌")
         return
 
-    text = "🛒 Yangi zakaz:\n\n"
-
     counts = {}
     for item in data:
         counts[item] = counts.get(item, 0) + 1
 
+    text = "🛒 Zakaz:\n\n"
     for item, qty in counts.items():
         text += f"{item} x{qty}\n"
 
     bot.send_message(ADMIN_ID, text)
-    bot.send_message(chat_id, "✅ Buyurtma yuborildi!")
-
+    bot.send_message(chat_id, "✅ Yuborildi")
 
 bot.infinity_polling()
