@@ -2,13 +2,9 @@ import telebot
 from telebot import types
 import os
 import json
-import threading
 
-from fastapi import FastAPI
-import uvicorn
-
-# ===== ENV =====
 TOKEN = os.getenv("TOKEN")
+
 if not TOKEN:
     raise Exception("TOKEN topilmadi")
 
@@ -16,15 +12,7 @@ ADMIN_ID = 6877877555
 
 bot = telebot.TeleBot(TOKEN)
 
-# ===== FASTAPI (Railway uchun) =====
-app = FastAPI()
 
-@app.get("/")
-def home():
-    return {"status": "ok"}
-
-
-# ===== START =====
 @bot.message_handler(commands=["start"])
 def start(msg):
     markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
@@ -40,7 +28,6 @@ def start(msg):
     )
 
 
-# ===== MINIAPP DATA =====
 @bot.message_handler(content_types=["web_app_data"])
 def webapp(msg):
     chat_id = msg.chat.id
@@ -68,15 +55,5 @@ def webapp(msg):
     bot.send_message(chat_id, "✅ Buyurtmangiz yuborildi!")
 
 
-# ===== BOT RUN =====
-def run_bot():
-    print("🤖 Bot ishga tushdi...")
-    bot.infinity_polling()
-
-
-# ===== MAIN =====
-if __name__ == "__main__":
-    threading.Thread(target=run_bot).start()
-
-    port = int(os.environ.get("PORT", 8000))
-    uvicorn.run(app, host="0.0.0.0", port=port)
+print("🚀 Bot ishga tushdi...")
+bot.infinity_polling()
