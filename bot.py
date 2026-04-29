@@ -13,9 +13,10 @@ bot = telebot.TeleBot(TOKEN)
 def start(msg):
     markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
 
-    webApp = types.WebAppInfo("https://gratofood.github.io/miniapp/")
+    web_app = types.WebAppInfo("https://gratofood.github.io/miniapp/")
 
-    markup.add(types.KeyboardButton("🛍 Buyurtma berish", web_app=webApp))
+    btn = types.KeyboardButton("🛍 Buyurtma berish", web_app=web_app)
+    markup.add(btn)
 
     bot.send_message(
         msg.chat.id,
@@ -44,11 +45,11 @@ def webapp(msg):
     for item in data:
         counts[item] = counts.get(item, 0) + 1
 
-    for item in counts:
-        text += f"{item} x{counts[item]}\n"
+    for item, qty in counts.items():
+        text += f"{item} x{qty}\n"
 
     bot.send_message(ADMIN_ID, text)
-    bot.send_message(chat_id, "✅ Buyurtmangiz yuborildi!")
+    bot.send_message(chat_id, "✅ Buyurtma yuborildi!")
 
 
 bot.infinity_polling()
