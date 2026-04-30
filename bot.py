@@ -11,7 +11,7 @@ bot = telebot.TeleBot(TOKEN)
 @bot.message_handler(commands=["start"])
 def start(msg):
     markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
-    webApp = types.WebAppInfo("https://gratofood.github.io/gratofood/miniapp/?v=10")
+    webApp = types.WebAppInfo("https://gratofood.github.io/miniapp/")
 
     markup.add(types.KeyboardButton("🛍 Buyurtma berish", web_app=webApp))
 
