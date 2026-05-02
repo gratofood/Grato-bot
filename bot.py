@@ -97,8 +97,14 @@ def is_open():
     return OPEN_HOUR <= now.hour < CLOSE_HOUR
 
 def status_label(s):
-    return {"new":"🆕 Yangi","accepted":"✅ Qabul qilindi","cooking":"👨‍🍳 Tayyorlanmoqda",
-            "on_way":"🚗 Yo'lda","delivered":"🎉 Yetkazildi","cancelled":"❌ Bekor qilindi"}.get(s, s)
+    return {
+        "new":       "🆕 Yangi",
+        "accepted":  "✅ Qabul qilindi",
+        "cooking":   "👨‍🍳 Tayyorlanmoqda",
+        "on_way":    "🚗 Yo'lda",
+        "delivered": "🎉 Yetkazildi",
+        "cancelled": "❌ Bekor qilindi"
+    }.get(s, s)
 
 def order_text(order_id, data, username=None):
     if isinstance(data, dict):
@@ -129,14 +135,14 @@ def order_text(order_id, data, username=None):
 def admin_kb(order_id):
     kb = types.InlineKeyboardMarkup(row_width=2)
     kb.add(
-        types.InlineKeyboardButton("✅ Qabul",      callback_data=f"status_{order_id}_accepted"),
+        types.InlineKeyboardButton("✅ Qabul",           callback_data=f"status_{order_id}_accepted"),
         types.InlineKeyboardButton("👨‍🍳 Tayyorlanmoqda", callback_data=f"status_{order_id}_cooking"),
     )
     kb.add(
-        types.InlineKeyboardButton("🚗 Yo'lda",     callback_data=f"status_{order_id}_on_way"),
-        types.InlineKeyboardButton("🎉 Yetkazildi", callback_data=f"status_{order_id}_delivered"),
+        types.InlineKeyboardButton("🚗 Yo'lda",          callback_data=f"status_{order_id}_on_way"),
+        types.InlineKeyboardButton("🎉 Yetkazildi",      callback_data=f"status_{order_id}_delivered"),
     )
-    kb.add(types.InlineKeyboardButton("❌ Bekor",   callback_data=f"status_{order_id}_cancelled"))
+    kb.add(types.InlineKeyboardButton("❌ Bekor",        callback_data=f"status_{order_id}_cancelled"))
     return kb
 
 # ── /start ──
@@ -149,7 +155,7 @@ def start(msg):
     status = "✅ Hozir ochiq" if is_open() else f"❌ Hozir yopiq ({OPEN_HOUR}:00–{CLOSE_HOUR}:00)"
     bot.send_message(msg.chat.id, f"Xush kelibsiz! {status}\nBuyurtma berish 👇", reply_markup=markup)
 
-# ── /stats (admin) ──
+# ── /stats (faqat admin) ──
 @bot.message_handler(commands=["stats"])
 def stats(msg):
     if msg.chat.id != ADMIN_ID: return
@@ -208,7 +214,6 @@ def webapp(msg):
         return bot.send_message(msg.chat.id, f"⚠️ Kafe yopiq!\nIsh vaqti: {OPEN_HOUR}:00–{CLOSE_HOUR}:00")
     if not data.get("items"):
         return bot.send_message(msg.chat.id, "Savat bo'sh ❌")
-
     order_id = save_order(msg.chat.id, msg.from_user.username, data)
     bot.send_message(msg.chat.id,
         f"✅ Buyurtma qabul qilindi!\n📌 Raqam: #{order_id}\n💰 Jami: {fmt(data.get('total',0))}\n\nHolati haqida xabar beramiz 😊")
@@ -223,7 +228,7 @@ def callback(c):
         order_id = int(parts[1])
         status   = "_".join(parts[2:])
         update_status(order_id, status)
-        order = get_order(order_id)
+        order    = get_order(order_id)
         new_text = order_text(order_id, order) + f"\n📌 Holat: {status_label(status)}"
         try:
             bot.edit_message_text(new_text, c.message.chat.id, c.message.message_id,
