@@ -11,7 +11,7 @@ import pytz
 TOKEN        = os.getenv("TOKEN")
 ADMIN_ID     = int(os.getenv("ADMIN_ID", "6877877555"))
 DATABASE_URL = os.getenv("DATABASE_URL")
-TIMEZONE     = pytz.timezone("Asia/BUKHARA")
+TIMEZONE     = pytz.timezone("Asia/Tashkent")
 OPEN_HOUR    = 8
 CLOSE_HOUR   = 22
 
