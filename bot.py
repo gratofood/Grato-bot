@@ -112,17 +112,29 @@ def order_text(order_id, data, username=None):
         address=data.get("address",""); note=data.get("note","")
         promo=data.get("promo"); discount=data.get("discount",0)
         subtotal=data.get("subtotal",0); total=data.get("total",0)
+        loc = data.get("location")
     else:
         items=json.loads(data["items"]) if isinstance(data["items"],str) else data["items"]
         name=data["name"]; phone=data["phone"]; address=data["address"] or ""
         note=data["note"] or ""; promo=data["promo"]; discount=data["discount"]
         subtotal=data["subtotal"]; total=data["total"]
+        loc = data["location"]
 
     t  = f"🛒 YANGI BUYURTMA #{order_id}\n━━━━━━━━━━━━━━━━\n"
     t += f"👤 {name}\n📞 {phone}\n"
     if address: t += f"🏠 {address}\n"
     if note:    t += f"💬 {note}\n"
     if username: t += f"🔗 @{username}\n"
+
+    # Lokatsiya
+    if loc:
+        if isinstance(loc, str):
+            try: loc = json.loads(loc)
+            except: loc = None
+        if loc and isinstance(loc, dict) and "lat" in loc and "lon" in loc:
+            t += f"📍 {loc['lat']},{loc['lon']}\n"
+            t += f"🗺 https://maps.google.com/?q={loc['lat']},{loc['lon']}\n"
+
     t += "━━━━━━━━━━━━━━━━\n🍽 Buyurtma:\n"
     for i in items:
         t += f"  • {i['name']} x{i['qty']} = {fmt(i['price']*i['qty'])}\n"
